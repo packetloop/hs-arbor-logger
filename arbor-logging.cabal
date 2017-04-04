@@ -2,9 +2,11 @@ name:                arbor-logging
 version:             1.0.0
 -- synopsis:
 -- description:
-homepage:            https://github.com/packetloop/arbor-logging#readme
-author:              Alexey Raga
-maintainer:          alexey.raga@gmail.com
+homepage:            https://github.com/kazu-yamamoto/logger
+license:             MIT
+license-file:        LICENSE
+author:              Michael Snoyman
+maintainer:          michael@snoyman.com
 category:            Data
 build-type:          Simple
 extra-source-files:  README.md
