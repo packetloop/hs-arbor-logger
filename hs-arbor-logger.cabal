@@ -1,4 +1,4 @@
-name:                hs-arbor-logging
+name:                hs-arbor-logger
 version:             1.0.0
 -- synopsis:
 -- description:
@@ -24,4 +24,4 @@ library
 
 source-repository head
   type:     git
-  location: https://github.com/packetloop/arbor-logging
+  location: https://github.com/packetloop/arbor-logger
