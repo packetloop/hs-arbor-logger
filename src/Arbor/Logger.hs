@@ -10,7 +10,7 @@
 -- | This module is redundant when https://github.com/kazu-yamamoto/logger/pull/87
 -- is merged that updates 'monad-logger' to support timestamps
 
-module Arbor.Logging
+module Arbor.Logger
 ( runLogT
 , logInfo, logWarn, logError)
 where

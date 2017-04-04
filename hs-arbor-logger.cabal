@@ -14,7 +14,7 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Arbor.Logging
+  exposed-modules:     Arbor.Logger
   build-depends:       base >= 4.7 && < 5
                      , bytestring
                      , fast-logger
