@@ -11,21 +11,39 @@
 -- is merged that updates 'monad-logger' to support timestamps
 
 module Arbor.Logger
-( runLogT
+( runLogT, runLogT'
 , logInfo, logWarn, logError)
 where
 
+import Control.Exception.Lifted (onException, bracket)
+import Control.Monad.Trans.Control (MonadBaseControl (..), MonadTransControl (..))
+import Control.Monad.Base (MonadBase (liftBase))
+import qualified Control.Monad.Trans.Class as Trans
 import Control.Monad.IO.Class
 import Control.Monad.Logger hiding (logInfo, logError, logWarn, logDebug)
 import System.Log.FastLogger
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.Text as T
+import System.IO
 
 runLogT :: LogLevel -> LoggingT IO () -> IO ()
 runLogT logLevel f = liftIO $ do
   tc <- newTimeCache "%Y-%m-%d %T"
   withTimedFastLogger tc (LogStdout defaultBufSize) $ \logger ->
     runTimedFastLoggerLoggingT logger . filterLogger (\_ lvl -> lvl >= logLevel) $ f
+
+runLogT' :: MonadBaseControl IO m
+         => LogLevel
+         -> LoggingT m a
+         -> m a
+runLogT' logLevel f = bracket
+  (liftBase mkLogger)
+  (liftBase . snd)
+  $ \(l, _) -> runTimedFastLoggerLoggingT l . filterLogger (\_ lvl -> lvl >= logLevel) $ f
+  where
+    mkLogger = liftBase $ do
+      tc <- newTimeCache "%Y-%m-%d %T"
+      newTimedFastLogger tc (LogStdout defaultBufSize)
 
 logInfo :: MonadLogger m => String -> m ()
 logInfo = logInfoN . T.pack
