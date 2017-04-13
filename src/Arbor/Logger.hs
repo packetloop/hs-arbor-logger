@@ -1,30 +1,29 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE CPP                   #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE Trustworthy           #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 -- | This module is redundant when https://github.com/kazu-yamamoto/logger/pull/87
 -- is merged that updates 'monad-logger' to support timestamps
 
 module Arbor.Logger
 ( runLogT, runLogT'
-, logInfo, logWarn, logError)
+, logDebug, logInfo, logWarn, logError)
 where
 
-import Control.Exception.Lifted (onException, bracket)
-import Control.Monad.Trans.Control (MonadBaseControl (..), MonadTransControl (..))
-import Control.Monad.Base (MonadBase (liftBase))
-import qualified Control.Monad.Trans.Class as Trans
-import Control.Monad.IO.Class
-import Control.Monad.Logger hiding (logInfo, logError, logWarn, logDebug)
-import System.Log.FastLogger
-import qualified Data.ByteString.Char8 as S8
-import qualified Data.Text as T
-import System.IO
+import           Control.Exception.Lifted    (bracket)
+import           Control.Monad.Base          (MonadBase (liftBase))
+import           Control.Monad.IO.Class
+import           Control.Monad.Logger        hiding (logDebug, logError,
+                                              logInfo, logWarn)
+import           Control.Monad.Trans.Control (MonadBaseControl (..))
+import qualified Data.ByteString.Char8       as S8
+import qualified Data.Text                   as T
+import           System.Log.FastLogger
 
 runLogT :: LogLevel -> LoggingT IO () -> IO ()
 runLogT logLevel f = liftIO $ do
@@ -44,6 +43,10 @@ runLogT' logLevel f = bracket
     mkLogger = liftBase $ do
       tc <- newTimeCache "%Y-%m-%d %T"
       newTimedFastLogger tc (LogStdout defaultBufSize)
+
+logDebug :: MonadLogger m => String -> m ()
+logDebug = logDebugN . T.pack
+{-# INLINE logDebug #-}
 
 logInfo :: MonadLogger m => String -> m ()
 logInfo = logInfoN . T.pack
@@ -90,7 +93,7 @@ defaultTimedLogStr loc src level msg time =
         [ S8.pack "["
         , case level of
             LevelOther t -> encodeUtf8 t
-            _ -> encodeUtf8 $ pack $ drop 5 $ show level
+            _            -> encodeUtf8 $ pack $ drop 5 $ show level
         , if T.null src
             then S8.empty
             else encodeUtf8 $ '#' `T.cons` src
@@ -140,7 +143,7 @@ defaultLogStr loc src level msg =
         [ S8.pack "["
         , case level of
             LevelOther t -> encodeUtf8 t
-            _ -> encodeUtf8 $ pack $ drop 5 $ show level
+            _            -> encodeUtf8 $ pack $ drop 5 $ show level
         , if T.null src
             then S8.empty
             else encodeUtf8 $ '#' `T.cons` src
@@ -166,4 +169,4 @@ fileLocStr loc = loc_package loc ++ ':' : loc_module loc ++
 
 isDefaultLoc :: Loc -> Bool
 isDefaultLoc (Loc "<unknown>" "<unknown>" "<unknown>" (0,0) (0,0)) = True
-isDefaultLoc _ = False
+isDefaultLoc _                                                     = False
