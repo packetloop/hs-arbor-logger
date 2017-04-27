@@ -12,7 +12,9 @@
 
 module Arbor.Logger
 ( runLogT, runLogT'
-, logDebug, logInfo, logWarn, logError)
+, logDebug, logInfo, logWarn, logError
+, MonadLogger(..), LogLevel(..), LoggingT(..)
+)
 where
 
 import           Control.Exception.Lifted    (bracket)
