@@ -11,9 +11,15 @@
 -- is merged that updates 'monad-logger' to support timestamps
 
 module Arbor.Logger
-( runLogT, runLogT'
+( runLogT, runLogT', runTimedLogT
 , logDebug, logInfo, logWarn, logError
-, MonadLogger(..), LogLevel(..), LoggingT(..)
+, logDebug', logInfo', logWarn', logError'
+, logWithoutLoc
+, pushLogMessage
+, createTimedFastLogger
+, withStdOutTimedFastLogger
+, MonadLogger(..), LogLevel(..), LoggingT(..), TimedFastLogger
+, ToLogStr(..)
 )
 where
 
@@ -28,9 +34,7 @@ import qualified Data.Text                   as T
 import           System.Log.FastLogger
 
 runLogT :: LogLevel -> LoggingT IO () -> IO ()
-runLogT logLevel f = liftIO $ do
-  tc <- newTimeCache "%Y-%m-%d %T"
-  withTimedFastLogger tc (LogStdout defaultBufSize) $ \logger ->
+runLogT logLevel f = withStdOutTimedFastLogger $ \logger ->
     runTimedFastLoggerLoggingT logger . filterLogger (\_ lvl -> lvl >= logLevel) $ f
 
 runLogT' :: MonadBaseControl IO m
@@ -38,29 +42,52 @@ runLogT' :: MonadBaseControl IO m
          -> LoggingT m a
          -> m a
 runLogT' logLevel f = bracket
-  (liftBase mkLogger)
+  (liftBase createTimedFastLogger)
   (liftBase . snd)
   $ \(l, _) -> runTimedFastLoggerLoggingT l . filterLogger (\_ lvl -> lvl >= logLevel) $ f
-  where
-    mkLogger = liftBase $ do
-      tc <- newTimeCache "%Y-%m-%d %T"
-      newTimedFastLogger tc (LogStdout defaultBufSize)
 
-logDebug :: MonadLogger m => String -> m ()
-logDebug = logDebugN . T.pack
+runTimedLogT :: MonadIO m => LogLevel -> TimedFastLogger -> LoggingT m a -> m a
+runTimedLogT logLevel logger =
+  runTimedFastLoggerLoggingT logger . filterLogger (\_ lvl -> lvl >= logLevel)
+
+withStdOutTimedFastLogger :: (TimedFastLogger -> IO a) -> IO a
+withStdOutTimedFastLogger f = do
+  tc <- newTimeCache "%Y-%m-%d %T"
+  withTimedFastLogger tc (LogStdout defaultBufSize) $ \logger -> f logger
+
+createTimedFastLogger :: IO (TimedFastLogger, IO ())
+createTimedFastLogger = do
+  tc <- newTimeCache "%Y-%m-%d %T"
+  newTimedFastLogger tc (LogStdout defaultBufSize)
+
+logDebug, logInfo, logWarn, logError :: MonadLogger m => String -> m ()
+logDebug = logDebug'
 {-# INLINE logDebug #-}
 
-logInfo :: MonadLogger m => String -> m ()
-logInfo = logInfoN . T.pack
+logInfo = logInfo'
 {-# INLINE logInfo #-}
 
-logWarn :: MonadLogger m => String -> m ()
-logWarn = logWarnN . T.pack
+logWarn = logWarn'
 {-# INLINE logWarn #-}
 
-logError :: MonadLogger m => String -> m ()
-logError = logErrorN . T.pack
+logError = logError'
 {-# INLINE logError #-}
+
+logDebug', logInfo', logWarn', logError' :: (MonadLogger m, ToLogStr s) => s -> m ()
+logDebug' = logWithoutLoc "" LevelDebug
+{-# INLINE logDebug' #-}
+
+logInfo' = logWithoutLoc "" LevelInfo
+{-# INLINE logInfo' #-}
+
+logWarn' = logWithoutLoc "" LevelWarn
+{-# INLINE logWarn' #-}
+
+logError' = logWithoutLoc "" LevelError
+{-# INLINE logError' #-}
+
+pushLogMessage :: (ToLogStr s) => TimedFastLogger -> LogLevel -> s -> IO ()
+pushLogMessage t l s = t (defaultTimedLogStr defaultLoc "" l (toLogStr s))
 
 -- | Run a block using a 'TimedFastLogger'.
 runTimedFastLoggerLoggingT :: TimedFastLogger -> LoggingT m a -> m a
