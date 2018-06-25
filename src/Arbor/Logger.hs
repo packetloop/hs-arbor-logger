@@ -23,15 +23,13 @@ module Arbor.Logger
 )
 where
 
-import           Control.Exception.Lifted    (bracket)
-import           Control.Monad.Base          (MonadBase (liftBase))
-import           Control.Monad.IO.Class
-import           Control.Monad.Logger        hiding (logDebug, logError,
-                                              logInfo, logWarn)
-import           Control.Monad.Trans.Control (MonadBaseControl (..))
-import qualified Data.ByteString.Char8       as S8
-import qualified Data.Text                   as T
-import           System.Log.FastLogger
+import Control.Exception.Lifted (bracket)
+import Control.Monad.IO.Class
+import Control.Monad.Logger     hiding (logDebug, logError, logInfo, logWarn)
+import System.Log.FastLogger
+
+import qualified Data.ByteString.Char8 as S8
+import qualified Data.Text             as T
 
 runLogT :: LogLevel -> LoggingT IO () -> IO ()
 runLogT logLevel f = withStdOutTimedFastLogger $ \logger ->
