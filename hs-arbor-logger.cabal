@@ -1,5 +1,5 @@
 name:                hs-arbor-logger
-version:             1.0.0
+version:             2.0.0
 -- synopsis:
 -- description:
 homepage:            https://github.com/kazu-yamamoto/logger
@@ -18,11 +18,9 @@ library
   build-depends:       base >= 4.7 && < 5
                      , bytestring
                      , fast-logger
-                     , lifted-base
                      , monad-logger
                      , transformers
                      , transformers-base
-                     , monad-control
                      , text
   default-language:    Haskell2010
 

@@ -7,11 +7,8 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
--- | This module is redundant when https://github.com/kazu-yamamoto/logger/pull/87
--- is merged that updates 'monad-logger' to support timestamps
-
 module Arbor.Logger
-( runLogT, runLogT', runTimedLogT
+( runTimedLogT
 , logDebug, logInfo, logWarn, logError
 , logDebug', logInfo', logWarn', logError'
 , logWithoutLoc
@@ -23,28 +20,11 @@ module Arbor.Logger
 )
 where
 
-import           Control.Exception.Lifted    (bracket)
-import           Control.Monad.Base          (MonadBase (liftBase))
 import           Control.Monad.IO.Class
-import           Control.Monad.Logger        hiding (logDebug, logError,
-                                              logInfo, logWarn)
-import           Control.Monad.Trans.Control (MonadBaseControl (..))
-import qualified Data.ByteString.Char8       as S8
-import qualified Data.Text                   as T
+import           Control.Monad.Logger   hiding (logDebug, logError, logInfo, logWarn)
+import qualified Data.ByteString.Char8  as S8
+import qualified Data.Text              as T
 import           System.Log.FastLogger
-
-runLogT :: LogLevel -> LoggingT IO () -> IO ()
-runLogT logLevel f = withStdOutTimedFastLogger $ \logger ->
-    runTimedFastLoggerLoggingT logger . filterLogger (\_ lvl -> lvl >= logLevel) $ f
-
-runLogT' :: MonadBaseControl IO m
-         => LogLevel
-         -> LoggingT m a
-         -> m a
-runLogT' logLevel f = bracket
-  (liftBase createTimedFastLogger)
-  (liftBase . snd)
-  $ \(l, _) -> runTimedFastLoggerLoggingT l . filterLogger (\_ lvl -> lvl >= logLevel) $ f
 
 runTimedLogT :: MonadIO m => LogLevel -> TimedFastLogger -> LoggingT m a -> m a
 runTimedLogT logLevel logger =
